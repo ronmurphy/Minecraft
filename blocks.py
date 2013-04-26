@@ -6,7 +6,7 @@
 from __future__ import unicode_literals
 
 # Python packages
-import os
+# Nothing for now...
 
 # Third-party packages
 import pyglet
@@ -18,6 +18,7 @@ from utils import load_image
 import globals as G
 from random import randint
 import sounds
+from entity import WheatCropEntity, FurnaceEntity
 
 BLOCK_TEXTURE_DIR = {}
 
@@ -883,8 +884,14 @@ class FurnaceBlock(HardBlock):
     id = 61
     name = "Furnace"
 
-    fuel = None
-    smelt_stack = None
+    entity_type = FurnaceEntity
+    entity = None
+
+    slot_count = 2
+
+    def __del__(self):
+        if self.entity is not None:
+            del self.entity
 
     # compatible with inventory
     def set_slot(self, index, value):
@@ -900,129 +907,58 @@ class FurnaceBlock(HardBlock):
         i = int(index)
         if i < 0 or i >= 2:
             return None
-        return self.fuel if i == 1 else self.smelt_stack
+        return self.entity.fuel if i == 1 else self.entity.smelt_stack
 
     def remove_all_by_index(self, index):
         i = int(index)
         if i < 0 or i >= 2:
             return None
         if i == 0:
-            self.smelt_stack = None
+            self.entity.smelt_stack = None
         else:
-            self.fuel = None
+            self.entity.fuel = None
 
     def get_items(self):
-        return [self.smelt_stack, self.fuel]
+        return [self.entity.smelt_stack, self.entity.fuel]
 
     def remove_unnecessary_stacks(self):
-        if self.fuel is not None:
-            if self.fuel.amount == 0:
-                self.fuel = None
-        if self.smelt_stack is not None:
-            if self.smelt_stack.amount == 0:
-                self.smelt_stack = None
+        if self.entity.fuel is not None:
+            if self.entity.fuel.amount == 0:
+                self.entity.fuel = None
+        if self.entity.smelt_stack is not None:
+            if self.entity.smelt_stack.amount == 0:
+                self.entity.smelt_stack = None
 
-    slot_count = 2
-
-    outcome_item = None
-    smelt_outcome = None # output slot
-
-    fuel_task = None
-    smelt_task = None
-
-    outcome_callback = None
-    fuel_callback = None
 
     def set_smelting_item(self, item):
         if item is None:
             return
-        self.smelt_stack = item
-        self.outcome_item = G.smelting_recipes.smelt(self.smelt_stack.get_object())
+        self.entity.smelt_stack = item
+        self.entity.outcome_item = G.smelting_recipes.smelt(self.entity.smelt_stack.get_object())
         # no such recipe
-        if self.outcome_item is None:
+        if self.entity.outcome_item is None:
             return
         else:
-            self.smelt()
+            self.entity.smelt()
 
     def set_fuel(self, fuel):
         if fuel is None:
             return
-        self.fuel = fuel
+        self.entity.fuel = fuel
         # invalid fuel
-        if self.fuel.get_object().burning_time == -1:
+        if self.entity.fuel.get_object().burning_time == -1:
             return
         else:
-            self.smelt()
+            self.entity.smelt()
 
-    def full(self, reserve=0):
-        if self.smelt_outcome is None:
-            return False
+    def set_outcome_callback(self, callback):
+        self.entity.outcome_callback = callback
 
-        return self.smelt_outcome.get_object().max_stack_size < self.smelt_outcome.amount + reserve
+    def set_fuel_callback(self, callback):
+        self.entity.fuel_callback = callback
 
-
-    def smelt_done(self):
-        print('outcome')
-        self.smelt_task = None
-        # outcome
-        if self.smelt_outcome is None:
-            self.smelt_outcome = self.outcome_item
-        else:
-            self.smelt_outcome.change_amount(self.outcome_item.amount)
-        # cost
-        self.smelt_stack.change_amount(-1)
-        # input slot has been empty
-        if self.smelt_stack.amount <= 0:
-            self.smelt_stack = None
-            self.outcome_item = None
-        if self.outcome_callback is not None:
-            if callable(self.outcome_callback):
-                self.outcome_callback()
-        # stop
-        if self.smelt_stack is None:
-            return
-        if self.full(self.outcome_item.amount):
-            return
-        if self.fuel is None or self.fuel_task is None:
-            return
-        # smelting task
-        self.smelt_task = G.main_timer.add_task(self.smelt_stack.get_object().smelting_time, self.smelt_done)
-
-    def remove_fuel(self):
-        print('remove fuel')
-        if self.fuel_callback is not None:
-            if callable(self.fuel_callback):
-                self.fuel_callback()
-        self.fuel_task = None
-        self.fuel.change_amount(-1)
-        if self.fuel.amount <= 0:
-            self.fuel = None
-            # stop smelting task
-            if self.smelt_task is not None:
-                G.main_timer.remove_task(self.smelt_task)
-            self.smelt_task = None
-            return
-
-        # continue
-        if self.smelt_task is not None:
-            self.fuel_task = G.main_timer.add_task(self.fuel.get_object().burning_time, self.remove_fuel)
-
-    def smelt(self):
-        if self.fuel is None or self.smelt_stack is None:
-            return
-        # smelting
-        if self.fuel_task is not None or self.smelt_task is not None:
-            return
-        if self.full():
-            return
-
-        print('start smelting')
-        burning_time = self.fuel.get_object().burning_time
-        smelting_time = self.smelt_stack.get_object().smelting_time
-        # fuel task: remove fuel
-        self.fuel_task = G.main_timer.add_task(burning_time, self.remove_fuel)
-        # smelting task
-        self.smelt_task = G.main_timer.add_task(smelting_time, self.smelt_done)
+    def get_smelt_outcome(self):
+        return self.entity.smelt_outcome
 
 class FarmBlock(Block):
     top_texture = 5, 3
@@ -1429,46 +1365,24 @@ class WheatCropBlock(Block):
     max_stack_size = 16
     amount_label_color = 0, 0, 0, 255
 
-    # used to update texture
-    position = None
-    world = None
-
     growth_stage = 0
     # FIXME: A class attribute should never be mutable.
     texture_list = []
-    # second per stage
-    grow_time = 10
-    grow_task = None
+    entity_type = WheatCropEntity
+    entity = None
 
     # FIXME: This constructor contains many heresies.  The parent class
     # constructor is not called and it contains hard-coded values.
-    def __init__(self, grow=True):
+    def __init__(self):
         self.top_texture = get_texture_coordinates(-1, -1)
         self.bottom_texture = get_texture_coordinates(-1, -1)
         for i in range(0, 8):
             self.side_texture = get_texture_coordinates(14, i)
             self.texture_list.append(self.get_texture_data())
-        # start to grow
-        if grow:
-            self.grow_task = G.main_timer.add_task(self.grow_time, self.grow_callback)
 
     def __del__(self):
-        if self.grow_task is not None:
-            G.main_timer.remove_task(self.grow_task)
-        if self.world is None:
-            return
-        if self.position in self.world:
-            self.world.hide_block(self.position)
-
-    def grow_callback(self):
-        self.growth_stage = self.growth_stage + 1
-        if self.position in self.world:
-            self.world.hide_block(self.position)
-            self.world.show_block(self.position)
-        if self.growth_stage < 7:
-            self.grow_task = G.main_timer.add_task(self.grow_time, self.grow_callback)
-        else:
-            self.grow_task = None
+        if self.entity is not None:
+            del self.entity
 
     # special hack to return different texture, which depends on the growth stage
     @property
@@ -1490,7 +1404,7 @@ class WheatCropBlock(Block):
     def drop_id(self, value):
         self._drop_id = value
 
-class WildGrassBlock(Block):
+class TallGrassBlock(Block):
     width = 0.9
     height = 0.9
     top_texture = -1, -1
@@ -1501,273 +1415,99 @@ class WildGrassBlock(Block):
     transparent = True
     density = 0.3
     id = 31
-    name = "Fern"
+    name = "Tall grass"
     break_sound = sounds.leaves_break
     amount_label_color = 0, 0, 0, 255
 
    # def __init__(self):
-    #    super(WildGrassBlock, self).__init__()
+    #    super(TallGrassBlock, self).__init__()
     #    self.drop_id = BlockID(295) ## seed
     @property
     def drop_id(self):
         # 10% chance of dropping seed
         if randint(0, 10) == 0:
             return BlockID(295)
-        else:
-            return BlockID(0)
+        return BlockID(0)
 
     @drop_id.setter
     def drop_id(self, value):
         self._drop_id = value
 
-#more wild grass blocks
+# More tall grass blocks
 
-#Wild grass of different heights...
+# Tall grass of different heights...
 
-class Grass0Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+
+class Grass0Block(TallGrassBlock):
     side_texture = 13, 0
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.0
-    id = 31,1
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 1
+    texture_name = 'wg_grass_06'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass1Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass1Block(TallGrassBlock):
     side_texture = 13, 1
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.1
-    id = 31,2
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 2
+    texture_name = 'wg_grass_00'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass2Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass2Block(TallGrassBlock):
     side_texture = 13, 2
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.2
-    id = 31,3
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 3
+    texture_name = 'wg_grass_01'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass3Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass3Block(TallGrassBlock):
     side_texture = 13, 3
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.3
-    id = 31,4
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 4
+    texture_name = 'wg_grass_03'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass4Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass4Block(TallGrassBlock):
     side_texture = 13, 4
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.4
-    id = 31,5
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 5
+    texture_name = 'wg_grass_02'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass5Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass5Block(TallGrassBlock):
     side_texture = 13, 5
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.5
-    id = 31,6
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 6
+    texture_name = 'wg_grass_04'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass6Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass6Block(TallGrassBlock):
     side_texture = 13, 6
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.6
-    id = 31,7
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 7
+    texture_name = 'wg_grass_05'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass7Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class Grass7Block(TallGrassBlock):
     side_texture = 13, 7
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.7
-    id = 31,8
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31, 8
+    texture_name = 'wg_grass_07'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-# desert grass
-
-class DesertGrassBlock(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
+class DesertGrassBlock(TallGrassBlock):
     side_texture = 10, 6
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
     density = 0.3
-    id = 31
-    name = "Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
+    id = 31,1
+    name = "Desert Grass"
+    texture_name = 'deadbush'
 
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
+class DeadBushBlock(TallGrassBlock):
+    side_texture = 10, 7
+    density = 0.3
+    id = 31,0
+    name = "Dead bush"
+    texture_name = 'wg_red_desert'
 
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
 
 class DiamondBlock(HardBlock):
     top_texture = 11, 0
@@ -1864,9 +1604,6 @@ class CrackTextureBlock(object):
             self.texture_data.append(texture_coords * 6)
 
 crack_textures = CrackTextureBlock()
-
-# blocks that have their own data
-data_blocks = [FurnaceBlock, WheatCropBlock]
 
 air_block = AirBlock()
 grass_block = GrassBlock()
@@ -1968,8 +1705,8 @@ emeraldore_block = EmeraldOreBlock()
 lapisore_block = LapisOreBlock()
 rubyore_block = RubyOreBlock()
 sapphireore_block = SapphireOreBlock()
-fern_block = WildGrassBlock()
-wheat_crop_block = WheatCropBlock(False)
+fern_block = TallGrassBlock()
+wheat_crop_block = WheatCropBlock()
 #wild grass of different heights
 wildgrass0_block = Grass0Block()
 wildgrass1_block = Grass1Block()
@@ -1980,3 +1717,4 @@ wildgrass5_block = Grass5Block()
 wildgrass6_block = Grass6Block()
 wildgrass7_block = Grass7Block()
 desertgrass_block = DesertGrassBlock()
+deadbush_block = DeadBushBlock()

@@ -8,10 +8,15 @@ import unittest
 # Nothing for now...
 
 # Modules from this project
-from crafting import *
+from crafting import Recipes
 import globals as G
 from inventory import Inventory
 from items import ItemStack
+
+
+__all__ = (
+    'InventoryTests', 'CraftingTests',
+)
 
 
 class InventoryTests(unittest.TestCase):

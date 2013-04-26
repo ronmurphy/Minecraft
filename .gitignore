@@ -9,3 +9,6 @@
 *.pyd
 *.exp
 *.obj
+screencaptures*
+texturepacks*
+.idea*

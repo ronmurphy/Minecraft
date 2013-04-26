@@ -90,15 +90,6 @@ KEY_BINDINGS = dict(
 DISABLE_SAVE = True
 SAVE_FILENAME = None
 
-PICKLE_SAVE_MODE = 'pickle'
-PICKLE_COMPRESSED_SAVE_MODE = 'pickle_compressed'
-FLATFILE_SAVE_MODE = 'flatfile'
-REGION_SAVE_MODE = 'region'
-SAVE_MODES = (
-    PICKLE_SAVE_MODE, PICKLE_COMPRESSED_SAVE_MODE, FLATFILE_SAVE_MODE, REGION_SAVE_MODE
-)
-SAVE_MODE = REGION_SAVE_MODE
-
 
 #
 # Game engine
@@ -158,7 +149,7 @@ TERRAIN_CHOICES = {  # hill_height & max_trees mandatory for the moment.
         'max_trees': 1500,
     }
 }
-DEFAULT_TERRAIN_CHOICE = 'plains'
+DEFAULT_TERRAIN_CHOICE = 'island'  # was 'plains', makes more sense for islands, player stranded on an island
 TERRAIN_CHOICE = DEFAULT_TERRAIN_CHOICE
 TERRAIN = TERRAIN_CHOICES[DEFAULT_TERRAIN_CHOICE]
 
@@ -188,7 +179,7 @@ MAX_FPS = 60  # Maximum frames per second.
 QUEUE_PROCESS_SPEED = 0.3 / MAX_FPS #Try shrinking this if chunk loading is laggy, higher loads chunks faster
 
 VISIBLE_SECTORS_RADIUS = 8
-DELOAD_SECTORS_RADIUS = 16
+DELOAD_SECTORS_RADIUS = 12
 
 DRAW_DISTANCE_CHOICES = {
     'short': 60.0,
@@ -322,9 +313,6 @@ def initialize_config():
 
     DEBUG = get_or_update_config(
         general, 'debug', DEBUG, conv=bool)
-
-    get_or_update_config(
-        general, 'save_mode', SAVE_MODE, choices=SAVE_MODES)
 
     #
     # Graphics

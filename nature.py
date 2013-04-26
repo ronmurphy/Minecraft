@@ -78,8 +78,8 @@ class Tree(object):
                         continue
                     # Avoids orphaned leaves
                     if not world.has_neighbors((xl, yl, zl),
-                                               (cls.trunk_block,
-                                                cls.leaf_block)):
+                                               set((cls.trunk_block,
+                                                    cls.leaf_block))):
                         continue
                     dz = abs(zl - z)
                     # The farther we are (horizontally) from the trunk,
@@ -88,7 +88,6 @@ class Tree(object):
                         continue
                     world.add_block((xl, yl, zl), cls.leaf_block, force=False,
                                     sync=sync)
-<<<<<<< HEAD
 
 
 #
@@ -105,18 +104,10 @@ class Pumpkin(SmallPlant):
     block = pumpkin_block
     grows_on = grass_block, dirt_block, snowgrass_block
 
-=======
-
-
-#
-# Small plants
-#
->>>>>>> db798572e82f2d499564773be057c2781e354aee
 
 class YFlowers(SmallPlant):
     block = yflowers_block
 
-<<<<<<< HEAD
 
 class Potato(SmallPlant):
     block = potato_block
@@ -130,41 +121,53 @@ class Rose(SmallPlant):
     block = rose_block
 
 
-class Fern(SmallPlant):
+class TallGrass(SmallPlant):
     block = fern_block
 
-class WildGrass0(SmallPlant):
+
+class TallGrass0(SmallPlant):
     block = wildgrass0_block
     grows_on = grass_block, dirt_block
 
-class WildGrass1(SmallPlant):
+
+class TallGrass1(SmallPlant):
     block = wildgrass1_block
     grows_on = grass_block, dirt_block
 
-class WildGrass2(SmallPlant):
+
+class TallGrass2(SmallPlant):
     block = wildgrass2_block
     grows_on = grass_block, dirt_block
 
-class WildGrass3(SmallPlant):
+
+class TallGrass3(SmallPlant):
     block = wildgrass3_block
     grows_on = grass_block, dirt_block
 
-class WildGrass4(SmallPlant):
+
+class TallGrass4(SmallPlant):
     block = wildgrass4_block
     grows_on = grass_block, dirt_block
 
-class WildGrass5(SmallPlant):
+
+class TallGrass5(SmallPlant):
     block = wildgrass5_block
     grows_on = grass_block, dirt_block
 
 
-class WildGrass6(SmallPlant):
+class TallGrass6(SmallPlant):
     block = wildgrass6_block
     grows_on = grass_block, dirt_block
 
-class WildGrass7(SmallPlant):
+
+class TallGrass7(SmallPlant):
     block = wildgrass7_block
     grows_on = grass_block, dirt_block
+
+
+class DeadBush(SmallPlant):
+    block = deadbush_block
+    grows_on = sand_block, sandstone_block
 
 class DesertGrass(SmallPlant):
     block = desertgrass_block
@@ -187,55 +190,6 @@ class TallCactus(Trunk):
     grows_on = sand_block, sandstone_block
 
 
-=======
-class WaterMelon(SmallPlant):
-    block = melon_block
-    grows_on = grass_block, dirt_block, snowgrass_block
-
-
-class Pumpkin(SmallPlant):
-    block = pumpkin_block
-    grows_on = grass_block, dirt_block, snowgrass_block
-
-
-class YFlowers(SmallPlant):
-    block = yflowers_block
-
-
-class Potato(SmallPlant):
-    block = potato_block
-
-
-class Carrot(SmallPlant):
-    block = carrot_block
-
-
-class Rose(SmallPlant):
-    block = rose_block
-
-
-class Fern(SmallPlant):
-    block = fern_block
-
-
-#
-# Tall plants
-#
-
-
-class Cactus(Trunk):
-    block = cactus_block
-    height_range = 1, 4
-    grows_on = sand_block, sandstone_block
-
-
-class TallCactus(Trunk):
-    block = tallcactus_block
-    height_range = 1, 10
-    grows_on = sand_block, sandstone_block
-
-
->>>>>>> db798572e82f2d499564773be057c2781e354aee
 class Reed(Trunk):
     block = reed_block
     height_range = 1, 4
@@ -271,19 +225,17 @@ SMALL_PLANTS = set((
     Potato,
     Carrot,
     Rose,
-    Fern,
-<<<<<<< HEAD
-    WildGrass0,
-    WildGrass1,
-    WildGrass2,
-    WildGrass3,
-    WildGrass4,
-    WildGrass5,
-    WildGrass6,
-    WildGrass7,
+    TallGrass,
+    TallGrass0,
+    TallGrass1,
+    TallGrass2,
+    TallGrass3,
+    TallGrass4,
+    TallGrass5,
+    TallGrass6,
+    TallGrass7,
+    DeadBush,
     DesertGrass,
-=======
->>>>>>> db798572e82f2d499564773be057c2781e354aee
 ))
 
 TALL_PLANTS = set((
@@ -303,8 +255,8 @@ TREES = set((
 
 VEGETATION = PLANTS | TREES
 
-TREE_BLOCKS = tuple(tree.trunk_block for tree in TREES)
+TREE_BLOCKS = set(tree.trunk_block for tree in TREES)
 
-PLANT_BLOCKS = tuple(plant.block for plant in PLANTS)
+PLANT_BLOCKS = set(plant.block for plant in PLANTS)
 
-VEGETATION_BLOCKS = PLANT_BLOCKS + TREE_BLOCKS
+VEGETATION_BLOCKS = PLANT_BLOCKS | TREE_BLOCKS

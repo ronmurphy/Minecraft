@@ -10,10 +10,21 @@ from pyglet.text import Label
 from pyglet.window import key
 
 # Modules from this project
+from blocks import air_block
+# FIXME: Initialize crafting in a proper way, other than by importing.
+import crafting
 import globals as G
-from inventory import *
-from crafting import *  # import for G.recipes
+from inventory import Inventory
+from items import ItemStack
 from utils import load_image, image_sprite, hidden_image_sprite, get_block_icon
+
+
+__all__ = (
+    'Rectangle', 'Button', 'ToggleButton', 'Control', 'AbstractInventory',
+    'ItemSelector', 'InventorySelector', 'TextWidget', 'ProgressBarWidget',
+    'frame_image', 'button_image', 'button_highlighted', 'background_image',
+    'backdrop_images', 'rnd_backdrops', 'backdrop',
+)
 
 
 class Rectangle(object):
@@ -171,16 +182,16 @@ class AbstractInventory(Control):
         self.update_current()
 
 class ItemSelector(AbstractInventory):
-    def __init__(self, parent, player, model, *args, **kwargs):
+    def __init__(self, parent, player, world, *args, **kwargs):
         super(ItemSelector, self).__init__(parent, *args, **kwargs)
         self.batch = pyglet.graphics.Batch()
         self.group = pyglet.graphics.OrderedGroup(1)
         self.labels_group = pyglet.graphics.OrderedGroup(2)
         self.amount_labels = []
-        self.model = model
+        self.world = world
         self.player = player
         self.max_items = 9
-        self.icon_size = self.model.group.texture.width / G.TILESET_SIZE
+        self.icon_size = self.world.group.texture.width / G.TILESET_SIZE
         self.visible = True
         self.num_keys = [getattr(G, 'INVENTORY_%d_KEY' % i)
                          for i in range(1, 10)]
@@ -209,7 +220,7 @@ class ItemSelector(AbstractInventory):
             if not item:
                 x += (self.icon_size * 0.5) + 3
                 continue
-            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
             icon.scale = 0.5
             icon.x = x
             icon.y = self.frame.y + 3
@@ -316,18 +327,18 @@ class ItemSelector(AbstractInventory):
 
 
 class InventorySelector(AbstractInventory):
-    def __init__(self, parent, player, model, *args, **kwargs):
+    def __init__(self, parent, player, world, *args, **kwargs):
         super(InventorySelector, self).__init__(parent, *args, **kwargs)
         self.batch = pyglet.graphics.Batch()
         self.group = pyglet.graphics.OrderedGroup(1)
         self.amount_labels_group = pyglet.graphics.OrderedGroup(2)
         self.amount_labels = []
         self.parent = parent
-        self.model = model
+        self.world = world
         self.player = player
         self.max_items = self.player.inventory.slot_count
         self.current_index = 1
-        self.icon_size = self.model.group.texture.width / G.TILESET_SIZE
+        self.icon_size = self.world.group.texture.width / G.TILESET_SIZE
         self.selected_item = None
         self.selected_item_icon = None
         self.mode = 0 # 0 - Normal inventory, 1 - Crafting Table, 2 - Furnace
@@ -370,7 +381,7 @@ class InventorySelector(AbstractInventory):
                     x = self.frame.x + 7
                     y -= (self.icon_size * 0.5) + 3
                 continue
-            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
             icon.scale = 0.5
             icon.x = x
             icon.y = y - icon.height
@@ -394,7 +405,7 @@ class InventorySelector(AbstractInventory):
             if not item:
                 x += (self.icon_size * 0.5) + 3
                 continue
-            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
             icon.scale = 0.5
             icon.x = x
             icon.y = self.frame.y + 7
@@ -419,7 +430,7 @@ class InventorySelector(AbstractInventory):
             if not item:
                 y -= (self.icon_size * 0.5) + 3
                 continue
-            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
             icon.scale = 0.5
             icon.x = x
             icon.y = y
@@ -452,7 +463,7 @@ class InventorySelector(AbstractInventory):
                     x = self.frame.x + (165 if self.mode == 0 else 72 if self.mode == 1 else 63)
                     y -= (self.icon_size * 0.5) + 3
                 continue
-            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+            icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
             icon.scale = 0.5
             icon.x = x
             icon.y = y - icon.height
@@ -481,7 +492,7 @@ class InventorySelector(AbstractInventory):
             elif self.crafting_outcome:
                 self.remove_crafting_outcome()
         elif len(crafting_ingredients) > 0 and self.mode == 2:
-            outcome = self.furnace_panel.smelt_outcome
+            outcome = self.furnace_panel.get_smelt_outcome()
             if outcome:
                 self.set_crafting_outcome(outcome)
             elif self.crafting_outcome:
@@ -590,15 +601,15 @@ class InventorySelector(AbstractInventory):
     def set_furnace(self, furnace):
         self.furnace_panel = furnace
         # install callback
-        self.furnace_panel.outcome_callback = self.update_items
-        self.furnace_panel.fuel_callback = self.update_items
+        self.furnace_panel.set_outcome_callback(self.update_items)
+        self.furnace_panel.set_fuel_callback(self.update_items)
 
     def reset_furnace(self):
         # remove callback
         if self.furnace_panel is None:
             return
-        self.furnace_panel.outcome_callback = None
-        self.furnace_panel.fuel_callback = None
+        self.furnace_panel.set_outcome_callback(None)
+        self.furnace_panel.set_fuel_callback(None)
         self.furnace_panel = None
 
     def set_crafting_outcome(self, item):
@@ -607,7 +618,7 @@ class InventorySelector(AbstractInventory):
             return
         self.crafting_outcome = item
 
-        self.crafting_outcome_icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+        self.crafting_outcome_icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
         inventory_rows = floor(self.max_items / 9)
         inventory_height = (inventory_rows * (self.icon_size * 0.5)) + (inventory_rows * 3)
         quick_slots_y = self.frame.y + 4
@@ -640,7 +651,7 @@ class InventorySelector(AbstractInventory):
             return
         self.selected_item = item
 
-        self.selected_item_icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.model), self.batch, self.group)
+        self.selected_item_icon = image_sprite(get_block_icon(item.get_object(), self.icon_size, self.world), self.batch, self.group)
         self.selected_item_icon.scale = 0.4
 
     def remove_selected_item(self):
@@ -974,14 +985,14 @@ class ProgressBarWidget(Control):
 
     def set_progress(self, progress):
         self.progress = progress
-        self.update_progress
+        self.update_progress()
 
     def update_progress(self):
         if self.progress_updater is not None:
             self.progress = self.progress_updater()
 
         self.progress_pic = image_sprite(self.foreground_pic, self.batch, self.group, x=0, y=0,
-                width=floor(self.width * progress), height=self.height)
+                width=floor(self.width * self.progress), height=self.height)
 
     def _on_draw(self):
         self.update_progress()

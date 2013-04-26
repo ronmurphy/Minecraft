@@ -14,9 +14,10 @@ import pyglet
 # Disable error checking for increased performance
 pyglet.options['debug_gl'] = False
 from pyglet.gl import *
+from pyglet.window import key
 
 # Modules from this project
-from controllers import *
+from controllers import MainMenuController
 import globals as G
 from timer import Timer
 
