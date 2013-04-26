@@ -594,9 +594,9 @@ class ColumnQuartzBlock(HardBlock):
     digging_tool = G.PICKAXE
 
 class QuartzBrickBlock(HardBlock):
-    top_texture = 9, 7
-    bottom_texture = 9, 7
-    side_texture = 9, 7
+    top_texture = 13, 0
+    bottom_texture = 13, 0
+    side_texture = 13, 0
     id = 155,3
     hardness = 2
     name = "Quartz Brick"
@@ -1433,7 +1433,6 @@ class TallGrassBlock(Block):
     def drop_id(self, value):
         self._drop_id = value
 
-<<<<<<< HEAD
 # More tall grass blocks
 
 # Tall grass of different heights...
@@ -1509,257 +1508,6 @@ class DeadBushBlock(TallGrassBlock):
     name = "Dead bush"
     texture_name = 'wg_red_desert'
 
-=======
-# desert grass
-
-class DesertGrassBlock(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 10, 6
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.3
-    id = 31
-    name = "Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-   # def __init__(self):
-    #    super(WildGrassBlock, self).__init__()
-    #    self.drop_id = BlockID(295) ## seed
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-#Wild grass of different heights...
-
-class Grass0Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 0
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.0
-    id = 31,1
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass1Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 1
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.1
-    id = 31,2
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass2Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 2
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.2
-    id = 31,3
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass3Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 3
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.3
-    id = 31,4
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass4Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 4
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.4
-    id = 31,5
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass5Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 5
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.5
-    id = 31,6
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass6Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 6
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.6
-    id = 31,7
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
-
-class Grass7Block(Block):
-    width = 0.9
-    height = 0.9
-    top_texture = -1, -1
-    bottom_texture = -1, -1
-    side_texture = 13, 7
-    vertex_mode = G.VERTEX_CROSS
-    hardness = 0.0
-    transparent = True
-    density = 0.7
-    id = 31,8
-    name = "Wild Grass"
-    break_sound = sounds.leaves_break
-    amount_label_color = 0, 0, 0, 255
-
-    @property
-    def drop_id(self):
-        # 10% chance of dropping seed
-        if randint(0, 10) == 0:
-            return BlockID(295)
-        else:
-            return BlockID(0)
-
-    @drop_id.setter
-    def drop_id(self, value):
-        self._drop_id = value
->>>>>>> more wildgrass types, desert grass
 
 class DiamondBlock(HardBlock):
     top_texture = 11, 0
@@ -1957,13 +1705,8 @@ emeraldore_block = EmeraldOreBlock()
 lapisore_block = LapisOreBlock()
 rubyore_block = RubyOreBlock()
 sapphireore_block = SapphireOreBlock()
-<<<<<<< HEAD
 fern_block = TallGrassBlock()
 wheat_crop_block = WheatCropBlock()
-=======
-fern_block = WildGrassBlock()
-wheat_crop_block = WheatCropBlock(False)
->>>>>>> more wildgrass types, desert grass
 #wild grass of different heights
 wildgrass0_block = Grass0Block()
 wildgrass1_block = Grass1Block()
@@ -1973,9 +1716,5 @@ wildgrass4_block = Grass4Block()
 wildgrass5_block = Grass5Block()
 wildgrass6_block = Grass6Block()
 wildgrass7_block = Grass7Block()
-<<<<<<< HEAD
 desertgrass_block = DesertGrassBlock()
 deadbush_block = DeadBushBlock()
-=======
-desertgrass_block = DesertGrassBlock()
->>>>>>> more wildgrass types, desert grass
