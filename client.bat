@@ -1,2 +1,8 @@
-c:\Python\python.exe main.py %1 %2 %3 %4 %5 %6 %7 %8 %9
-cleanup.bat
+python main.py
+@echo off
+del *.pyc 
+del *.c
+del *.h
+del *.so
+
+del thumbs.db

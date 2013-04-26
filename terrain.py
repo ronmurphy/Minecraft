@@ -500,8 +500,7 @@ class TerrainGeneratorSimple(TerrainGeneratorBase):
             self.zoom_level = 0.002
         elif G.TERRAIN_CHOICE == "island":
             # Some grass that cant be on sand, for a clean beach
-            #  some Ferns and the smaller of the tall grass, for seeds for the players
-            self.world_type_grass = (YFlowers, Rose, TallGrass, TallGrass, TallGrass0, TallGrass1, TallGrass2, TallGrass3)
+            self.world_type_grass = (YFlowers, Rose, TallGrass)
             main_block = grass_block
             self.height_range = 32
             self.height_base = 32
@@ -631,5 +630,5 @@ class TerrainGeneratorSimple(TerrainGeneratorBase):
                         else:
                             blockset = lowlevel_ores
                         init_block((x, yy, z), choose(blockset))
-                        if by == 0:
-                            init_block((x, 0, z), bed_block)
+                    if by == 0:
+                        init_block((x, 0, z), bed_block)
