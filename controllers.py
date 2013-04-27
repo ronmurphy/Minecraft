@@ -2,6 +2,8 @@
 
 # Python packages
 from binascii import hexlify
+import socket
+import time
 import datetime
 from functools import partial
 from itertools import imap
@@ -11,6 +13,7 @@ import os
 import random
 
 # Third-party packages
+import threading
 from pyglet.gl import *
 
 # Modules from this project
@@ -117,7 +120,12 @@ class GameController(Controller):
         self.hour_deg = 15.0
         self.clock = 6
 
+        self.back_to_main_menu = threading.Event()
+
     def update(self, dt):
+        if self.back_to_main_menu.isSet():
+            self.switch_controller_class(MainMenuController)
+            return
         self.update_sector(dt)
         self.update_player(dt)
         self.update_mouse(dt)
@@ -199,8 +207,19 @@ class GameController(Controller):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def setup(self):
+        try:
+            #Make sure the address they want to connect to works
+            ipport = G.IP_ADDRESS.split(":")
+            if len(ipport) == 1: ipport.append(1486)
+            sock = socket.socket()
+            sock.connect(tuple(ipport))
+        except socket.error as e:
+            print "Socket Error:", e
+            #Otherwise back to the main menu we go
+            return False
+
         self.init_gl()
-        
+
         sky_rotation = -20.0  # -20.0
         print 'loading sky'
         self.skydome = Skydome(
@@ -223,12 +242,18 @@ class GameController(Controller):
         #    open_world(self, G.game_dir, G.SAVE_FILENAME)
 
         self.world = World()
-        self.packetreceiver = PacketReceiver(self.world, self)
+        self.packetreceiver = PacketReceiver(self.world, self, sock)
         self.world.packetreceiver = self.packetreceiver
         self.packetreceiver.start()
-        #TODO: Get our position from the server
-        #self.player = Player((0,self.world.terraingen.get_height(0,0)+2,0), (-20, 0),
-        self.player = Player((0,50,0), (-20, 0),
+
+        #Get our position from the server
+        self.packetreceiver.request_spawnpos()
+        #Since we don't know it yet, lets disable self.update, or we'll load the wrong chunks and fall
+        self.update_disabled = self.update
+        self.update = lambda dt: None
+        #We'll re-enable it when the server tells us where we should be
+
+        self.player = Player((0,0,0), (-20, 0),
                                 game_mode=G.GAME_MODE)
         print('Game mode: ' + self.player.game_mode)
         self.item_list = ItemSelector(self, self.player, self.world)
@@ -256,6 +281,7 @@ class GameController(Controller):
         pyglet.clock.schedule_interval_soft(self.world.process_queue,
                                             1.0 / G.MAX_FPS)
         pyglet.clock.schedule_interval_soft(self.world.hide_sectors, 1.0, self.player)
+        return True
 
     def update_time(self):
         """
@@ -525,7 +551,8 @@ class GameController(Controller):
         if symbol == G.VALIDATE_KEY:
             txt = self.text_input.text.replace('\n', '')
             self.text_input.clear()
-            self.world.packetreceiver.send_chat(txt)
+            if txt:
+                self.world.packetreceiver.send_chat(txt)
             return pyglet.event.EVENT_HANDLED
 
     def on_text_input_toggled(self):
@@ -548,19 +575,18 @@ class GameController(Controller):
             self.window.remove_handlers(self.text_input)
 
     def push_handlers(self):
-        self.setup()
-        self.window.push_handlers(self.camera)
-        self.window.push_handlers(self.player)
-        self.window.push_handlers(self)
-        self.window.push_handlers(self.item_list)
-        self.window.push_handlers(self.inventory_list)
+        if self.setup():
+            self.window.push_handlers(self.camera)
+            self.window.push_handlers(self.player)
+            self.window.push_handlers(self)
+            self.window.push_handlers(self.item_list)
+            self.window.push_handlers(self.inventory_list)
+        else:
+            self.switch_controller_class(MainMenuController)
 
     def pop_handlers(self):
-        self.window.pop_handlers()
-        self.window.pop_handlers()
-        self.window.pop_handlers()
-        self.window.pop_handlers()
-        self.window.pop_handlers()
+        while self.window._event_stack:
+            self.window.pop_handlers()
 
     def on_close(self):
         self.world.packetreceiver.stop()  # Disconnect from the server so the process can close

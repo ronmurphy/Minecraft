@@ -42,6 +42,7 @@ class World(dict):
         self.lazy_queue = deque()
         self.sector_queue = OrderedDict()
 
+        self.packetreceiver = None
         self.sector_packets = deque()
 
     # Add the block clientside, then tell the server about the new block
@@ -252,9 +253,12 @@ class World(dict):
             self.dequeue()
 
     def hide_sectors(self, dt, player):
+        #TODO: This is pretty laggy, I feel an FPS drop once a second while sector changing because of this
         deload = G.DELOAD_SECTORS_RADIUS
-        px, py, pz = sectorize(player.position)
-        for sector in self.sectors:
-            x,y,z = sector
-            if abs(px-x) > deload or abs(py-y) > deload or abs(pz-z) > deload:
-                self.enqueue_sector(False, sector)
+        plysector = sectorize(player.position)
+        if player.last_sector != plysector:
+            px, py, pz = plysector
+            for sector in self.sectors:
+                x,y,z = sector
+                if abs(px-x) > deload or abs(py-y) > deload or abs(pz-z) > deload:
+                    self.enqueue_sector(False, sector)

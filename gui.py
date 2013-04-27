@@ -70,7 +70,7 @@ class Rectangle(object):
         return (self.x + self.width, self.y + self.height)
 
 class Button(pyglet.event.EventDispatcher, Rectangle):
-    def __init__(self, parent, x, y, width, height, image=None, image_highlighted=None, caption=None, batch=None, group=None, label_group=None, font_name=G.DEFAULT_FONT):
+    def __init__(self, parent, x, y, width, height, image=None, image_highlighted=None, caption=None, batch=None, group=None, label_group=None, font_name=G.DEFAULT_FONT, enabled=True):
         super(Button, self).__init__(x, y, width, height)
         parent.push_handlers(self)
         self.batch, self.group, self.label_group = batch, group, label_group
@@ -80,6 +80,20 @@ class Button(pyglet.event.EventDispatcher, Rectangle):
         self.label = Label(str(caption), font_name, 12, anchor_x='center', anchor_y='center',
             color=(255, 255, 255, 255), batch=self.batch, group=self.label_group) if caption else None
         self.position = x, y
+        self.enable(enabled)
+
+    def enable(self, enabled=True):
+        self.enabled = enabled
+        opacity = 255 if self.enabled else 100
+        if self.sprite:
+            self.sprite.opacity = opacity
+        if self.sprite_highlighted:    
+            self.sprite_highlighted.opacity = opacity
+        if self.label:
+            self.label.color = (255, 255, 255, opacity)    
+
+    def disable(self, enabled=False):
+        self.enable(enabled)
 
     @property
     def position(self):
@@ -120,21 +134,20 @@ class Button(pyglet.event.EventDispatcher, Rectangle):
             self.label.draw()
 
     def on_mouse_click(self, x, y, button, modifiers):
-        if self.hit_test(x, y):
+        if self.enabled and self.hit_test(x, y):
             self.dispatch_event('on_click')
 
 Button.register_event_type('on_click')
 
 
 class ToggleButton(Button):
-    def __init__(self, parent, x, y, width, height, image=None, image_highlighted=None, caption=None, batch=None, group=None, label_group=None, font_name=G.DEFAULT_FONT):
-        super(ToggleButton, self).__init__(parent, x, y, width, height, image=image, image_highlighted=image_highlighted, caption=caption, batch=batch, group=group, label_group=label_group, font_name=font_name)
+    def __init__(self, parent, x, y, width, height, image=None, image_highlighted=None, caption=None, batch=None, group=None, label_group=None, font_name=G.DEFAULT_FONT, enabled=True):
+        super(ToggleButton, self).__init__(parent, x, y, width, height, image=image, image_highlighted=image_highlighted, caption=caption, batch=batch, group=group, label_group=label_group, font_name=font_name, enabled=enabled)
         self.toggled = False
 
     def on_mouse_click(self, x, y, button, modifiers):
-        if self.hit_test(x, y):
+        if self.enabled and self.hit_test(x, y):
             self.toggled = not self.toggled
-        print self.toggled
         super(ToggleButton, self).on_mouse_click( x, y, button, modifiers)
 
 
@@ -171,6 +184,9 @@ class AbstractInventory(Control):
     def __init__(self, parent, *args, **kwargs):
         super(AbstractInventory, self).__init__(parent, *args, **kwargs)
         self._current_index = 0
+        self.batch = pyglet.graphics.Batch()
+        self.group = pyglet.graphics.OrderedGroup(1)
+        self.labels_group = pyglet.graphics.OrderedGroup(2)
 
     @property
     def current_index(self):
@@ -181,12 +197,12 @@ class AbstractInventory(Control):
         self._current_index = value % self.max_items
         self.update_current()
 
+    def update_current(self):
+        pass
+
 class ItemSelector(AbstractInventory):
     def __init__(self, parent, player, world, *args, **kwargs):
         super(ItemSelector, self).__init__(parent, *args, **kwargs)
-        self.batch = pyglet.graphics.Batch()
-        self.group = pyglet.graphics.OrderedGroup(1)
-        self.labels_group = pyglet.graphics.OrderedGroup(2)
         self.amount_labels = []
         self.world = world
         self.player = player
@@ -329,9 +345,6 @@ class ItemSelector(AbstractInventory):
 class InventorySelector(AbstractInventory):
     def __init__(self, parent, player, world, *args, **kwargs):
         super(InventorySelector, self).__init__(parent, *args, **kwargs)
-        self.batch = pyglet.graphics.Batch()
-        self.group = pyglet.graphics.OrderedGroup(1)
-        self.amount_labels_group = pyglet.graphics.OrderedGroup(2)
         self.amount_labels = []
         self.parent = parent
         self.world = world
@@ -395,7 +408,7 @@ class InventorySelector(AbstractInventory):
                 str(item.amount), font_name=G.DEFAULT_FONT, font_size=9,
                 x=icon.x + 3, y=icon.y, anchor_x='left', anchor_y='bottom',
                 color=item.get_object().amount_label_color, batch=self.batch,
-                group=self.amount_labels_group)
+                group=self.labels_group)
             self.amount_labels.append(amount_label)
             self.icons.append(icon)
 
@@ -418,7 +431,7 @@ class InventorySelector(AbstractInventory):
                 str(item.amount), font_name=G.DEFAULT_FONT, font_size=9,
                 x=icon.x + 3, y=icon.y, anchor_x='left', anchor_y='bottom',
                 color=item.get_object().amount_label_color, batch=self.batch,
-                group=self.amount_labels_group)
+                group=self.labels_group)
             self.amount_labels.append(amount_label)
             self.icons.append(icon)
 
@@ -440,10 +453,9 @@ class InventorySelector(AbstractInventory):
                 str(item.amount), font_name=G.DEFAULT_FONT, font_size=9,
                 x=icon.x + 3, y=icon.y, anchor_x='left', anchor_y='bottom',
                 color=item.get_object().amount_label_color, batch=self.batch,
-                group=self.amount_labels_group)
+                group=self.labels_group)
             self.amount_labels.append(amount_label)
             self.icons.append(icon)
-        self.update_current()
 
         crafting_y = inventory_y + inventory_height + (42 if self.mode == 0 else 14 if self.mode == 1 else 32)
         crafting_rows = (2 if self.mode == 0 else 3 if self.mode == 1 else 2)
@@ -479,7 +491,7 @@ class InventorySelector(AbstractInventory):
                 str(item.amount), font_name=G.DEFAULT_FONT, font_size=9,
                 x=icon.x + 3, y=icon.y, anchor_x='left', anchor_y='bottom',
                 color=item.get_object().amount_label_color, batch=self.batch,
-                group=self.amount_labels_group)
+                group=self.labels_group)
             self.amount_labels.append(amount_label)
             self.icons.append(icon)
             if item.get_object().id > 0:
@@ -497,11 +509,6 @@ class InventorySelector(AbstractInventory):
                 self.set_crafting_outcome(outcome)
             elif self.crafting_outcome:
                 self.remove_crafting_outcome()
-        self.update_current()
-
-    def update_current(self):
-        '''self.active.x = self.frame.x + ((self.current_index % 9) * self.icon_size * 0.5) + (self.current_index % 9) * 3
-        self.active.y = self.frame.y + floor(self.current_index / 9) * self.icon_size * 0.5 + floor(self.current_index / 9) * 6'''
 
     def get_current_block_item_and_amount(self):
         item = self.player.inventory.at(self.current_index)
@@ -594,8 +601,6 @@ class InventorySelector(AbstractInventory):
 
         col = x_offset // (self.icon_size * 0.5 + 3)
 
-        #print(row)
-        #print(col)
         return inventory, int(row * items_per_row + col)
 
     def set_furnace(self, furnace):
@@ -623,18 +628,19 @@ class InventorySelector(AbstractInventory):
         inventory_height = (inventory_rows * (self.icon_size * 0.5)) + (inventory_rows * 3)
         quick_slots_y = self.frame.y + 4
         inventory_y = quick_slots_y + (42 if self.mode == 0 else 14 if self.mode == 1 else 32)
+
+        x, y = 0, 0
         if self.mode == 0:
-            self.crafting_outcome_icon.scale = 0.5
-            self.crafting_outcome_icon.y = inventory_y + inventory_height + 62
-            self.crafting_outcome_icon.x = self.frame.x + 270
+            x, y = 270, 62
         elif self.mode == 1:
-            self.crafting_outcome_icon.scale = 0.5
-            self.crafting_outcome_icon.y = inventory_y + inventory_height + 80
-            self.crafting_outcome_icon.x = self.frame.x + 225
+            x, y = 225, 80
         elif self.mode == 2:
-            self.crafting_outcome_icon.scale = 0.5
-            self.crafting_outcome_icon.y = inventory_y + inventory_height + 67
-            self.crafting_outcome_icon.x = self.frame.x + 222
+            x, y = 222, 67
+
+        self.crafting_outcome_icon.scale = 0.5
+        self.crafting_outcome_icon.x = self.frame.x + x
+        self.crafting_outcome_icon.y = inventory_y + inventory_height + y
+
         self.crafting_outcome_label = pyglet.text.Label(
             str(item.amount), font_name=G.DEFAULT_FONT, font_size=9,
             x= self.crafting_outcome_icon.x + 3, y= self.crafting_outcome_icon.y, anchor_x='left', anchor_y='bottom',
@@ -758,7 +764,6 @@ class InventorySelector(AbstractInventory):
                 inventory.remove_all_by_index(index)
 
         self.update_items()
-        self.update_current()
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_motion(self, x, y, dx, dy):
@@ -786,7 +791,6 @@ class InventorySelector(AbstractInventory):
         self.frame.x = (width - self.frame.width) / 2
         self.frame.y = self.icon_size / 2 - 4
         if self.visible:
-            self.update_current()
             self.update_items()
 
     def _on_draw(self):
