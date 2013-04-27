@@ -15,6 +15,7 @@ from inventory import Inventory
 from items import stick_item
 from utils import normalize, FACES
 
+damage_block = 0, 100, 0  # records the last block to do damage
 
 __all__ = (
     'Player',
@@ -36,6 +37,7 @@ class Player(Entity):
         self.dy = 0
         self.current_density = 1 # Current density of the block we're colliding with
         self.last_sector = None
+        self.damage_block = 0, 100, 0
 
         initial_items = [torch_block, stick_item]
 
@@ -188,6 +190,19 @@ class Player(Entity):
                     if parent.world[op].density < 1:
                         self.current_density = parent.world[op].density
                         continue
+
+                    if parent.world[op].player_damage > 0:
+                        if self.damage_block != np:
+                            # this keeps a player from taking the same damage over and over...
+                            self.change_health( - parent.world[op].player_damage)
+                            parent.item_list.update_health()
+                            self.damage_block = np
+                            continue
+                        else:
+                            #do nothing
+                            continue
+
+
                     # if height <= 1 then we can walk on top of it. (carpet, half-blocks, etc...)
                     if parent.world[op].height < 0.5:
                         #current_height = parent.world[op].height

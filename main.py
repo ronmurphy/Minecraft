@@ -8,6 +8,7 @@ import argparse
 import os
 import random
 import time
+from get_ip import get_lan_ip
 
 # Third-party packages
 import pyglet
@@ -105,6 +106,9 @@ def main(options):
         # window = Window(resizable=True, config=window_config)
     # except pyglet.window.NoSuchConfigException:
     window = Window(resizable=True, vsync=False)
+    local_ip = get_lan_ip()
+    local_ip = (local_ip)
+    print("local ip: " + local_ip)
 
     G.main_timer = Timer()
     pyglet.clock.schedule_interval(G.main_timer.schedule, G.TIMER_INTERVAL)

@@ -179,6 +179,7 @@ class Block(object):
     density = 1
     transparent = False
     regenerated_health = 0
+    player_damage = 0
 
     # Inventory attributes
     max_stack_size = 64
@@ -707,6 +708,7 @@ class CactusBlock(Block):
     transparent = True
     texture_name = "cactus_top","cactus_bottom","cactus_side"
     hardness = 2
+    player_damage = 1
     id = 81,0
     name = "Cactus"
 
@@ -719,6 +721,7 @@ class TallCactusBlock(Block):
     texture_name = "cactus_top","cactus_bottom","cactus_side"
     transparent = True
     hardness = 1
+    player_damage = 1
     id = 81,1  # not a real MC block, so the last possible # i think.
     name = "Thin Cactus"
 
@@ -804,6 +807,7 @@ class TorchBlock(WoodBlock):
     texture_name = "torch",
     hardness = 1
     transparent = True
+    player_damage = 1
     id = 50
     name = "Torch"
 
